@@ -1,0 +1,39 @@
+[default_config]
+
+version = "0.10.1"
+
+assembler = "masm"
+
+instruction_set = "x86"
+
+
+
+[default_config.opts]
+
+compiler = "ML.exe"
+
+compile_flags_txt = ["/c", "/Zd", "/Zi", "/coff", "/Iinclude", "/I."]
+
+diagnostics = true
+
+default_diagnostics = false
+
+
+
+[[project]]
+
+path = ""
+
+version = "0.10.1"
+
+assembler = "masm"
+
+instruction_set = "x86"
+
+
+
+[project.opts]
+
+diagnostics = true
+
+default_diagnostics = true
