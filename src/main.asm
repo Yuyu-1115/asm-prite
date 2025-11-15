@@ -4,20 +4,20 @@ INCLUDE Irvine32.inc
 INCLUDE WinWrapper.inc  
 
 .data
-    msg_press_a  db "Press 'A' to exit...", 0Ah, 0Dh, 0
-
+	string DW 06E2Ch, 08A66h
+    buffer HANDLE ?
+    len DWORD 2
+    charsWritten DWORD ?
 .code
 main PROC
-    mov edx, OFFSET msg_press_a
-    call WriteString
+    invoke CreateConsoleScreenBuffer, (GENERIC_READ OR GENERIC_WRITE), (FILE_SHARE_READ OR FILE_SHARE_WRITE), NULL, CONSOLE_TEXTMODE_BUFFER, NULL
+    mov buffer, eax
 
-WaitFor_A:
-    invoke GetAsyncKeyState, VK_A
-    test ax, 8000h
-    
-    jz WaitFor_A
-    
-    INVOKE ExitProcess, 0
+    invoke WriteConsoleW, buffer, ADDR string, len, ADDR charsWritten, NULL
 
+    invoke SetConsoleActiveScreenBuffer, buffer
+    
+    call WaitMsg
+    exit
 main ENDP
 END main

@@ -33,6 +33,7 @@ $(BUILD_DIR):
 .PHONY: run
 run: all
 	@echo [RUN] $(TARGET_GET)
+	chcp 65001
 	./$(TARGET_NAME)
 
 .PHONY: compile_commands
