@@ -56,11 +56,15 @@ ENABLE_PROCESSED_OUTPUT            = 1h
 ENABLE_VIRTUAL_TERMINAL_PROCESSING = 4h
 
 ; ----- Rendering (Console Screen Buffer) -----
-GENERIC_READ  = 80000000h
-GENERIC_WRITE = 40000000h
+GENERIC_READ  EQU 80000000h
+GENERIC_WRITE EQU 40000000h
 
 
 CONSOLE_TEXTMODE_BUFFER = 1h; used by the dwFlags in CreateConsoleScreenBuffer
+
+; ----- File API -----
+
+INVALID_FILE_SIZE EQU -1
 
 
 ; ======================================================
@@ -76,6 +80,17 @@ WCHAR TEXTEQU <WORD>
 ; ======================================================
 ; Windows API Declaration
 ; ======================================================
+
+; ----- File API -----
+GetFileSizeEx PROTO stdcall,
+hFile: HANDLE,
+lpFileSizeHigh: PTR DWORD
+
+; NOTE:
+; Retrieves the size of the specified file.
+
+; RETURN: If the function succeeds, the return value is the low-order doubleword of the file size
+; html file should be smaller than 4 GiB, lpFileSizeHigh can be ignored.
 
 ; ----- Read Input -----
 
