@@ -117,8 +117,6 @@ artID: DWORD
 
 	; properly format header with full length
 	invoke wsprintf, ADDR cmdBuffer, ADDR getHeader, setLen
-	; get length for RESP
-	invoke Str_length, ADDR cmdBuffer
 	; send header
 	invoke send, hRedis, ADDR cmdBuffer, eax, 0
 	; send art:%d
@@ -134,10 +132,10 @@ artID: DWORD
 	mov esi, OFFSET respBuffer 
 	xor edx, edx
 parse:
-	inc esi
-	inc edx
-	mov eax, [esi]
-	.IF eax != 0Ah
+	mov al, BYTE PTR [esi]
+	.IF al != 0Ah
+		inc esi
+		inc edx
 		jmp parse
 	.ENDIF
 
@@ -148,6 +146,7 @@ parse:
 	mov eax, totalBytes
 	sub eax, edx
 	mov ecx, eax
+
 
 	mov edi, buffer
 	rep movsb
