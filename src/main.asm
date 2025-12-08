@@ -4,6 +4,7 @@ INCLUDE WinWrapper.inc
 INCLUDE WinSocks.inc  
 INCLUDE HttpUtil.inc
 INCLUDE Redis.inc
+INCLUDE RouteUtil.inc
 
 .data
   REDIS_IP EQU 61EC4A64h;
@@ -20,9 +21,11 @@ INCLUDE Redis.inc
   clientLength DWORD SIZEOF service
 
   buffer BYTE 65536 DUP(?)
-  respBuffer BYTE 64 DUP(?)
+  respBuffer BYTE 4096 DUP(?)
+  bodyBuffer BYTE 4096 DUP(?)
+  dataLen DWORD ?
 
-  acceptMsg BYTE "Connection accepted...", 0Dh, 0Ah, 0
+  acceptMsg BYTE "Connection accepted...", 0
   redisInitMsg BYTE "[INFO] Successfully establish connection to Redis...", 0Dh, 0Ah, 0
   testMsg BYTE "[INFO] test...", 0Dh, 0Ah, 0
 .code
@@ -75,33 +78,141 @@ ServerLoop:
   ; receiving HTTP request
   invoke recv, hClient, ADDR buffer, LENGTH buffer, 0
 
+  ; store the size of request
+  mov dataLen, eax
+
+  ; add a trailing zero \0 for convenience
+  mov esi, OFFSET buffer
+  add esi, eax
+  mov BYTE PTR [esi], 0
+
+  ; /create
+  invoke FindString, ADDR buffer, ADDR routeCreate
+  .IF eax != -1
+      mov edx, OFFSET routeCreate
+      call WriteString
+      call Crlf
+      jmp CREATE
+  .ENDIF
+  
+  ; /read
+  invoke FindString, ADDR buffer, ADDR routeRead
+  .IF eax != -1
+      mov edx, OFFSET routeRead
+      call WriteString
+      call Crlf
+      jmp READ
+  .ENDIF
+
+  ; update
+  invoke FindString, ADDR buffer, ADDR routeUpdate
+  .IF eax != -1
+      mov edx, OFFSET routeUpdate
+      call WriteString
+      call Crlf
+      jmp UPDATE
+  .ENDIF
+
+  ; download
+  invoke FindString, ADDR buffer, ADDR routeDownload
+  .IF eax != -1
+      mov edx, OFFSET routeDownload
+      call WriteString
+      call Crlf
+      jmp DOWNLOAD
+  .ENDIF
+
+  invoke FindString, ADDR buffer, ADDR methodOptions
+  .IF eax != -1
+      mov edx, OFFSET methodOptions
+      call WriteString
+      call Crlf
+      jmp SEND_OK
+  .ENDIF
+
 
 CREATE: 
-; POST, 
+; POST, return an id
 
-UPLOAD:
-; POST, 
+; find the double CRLF
+  invoke FindString, ADDR buffer, ADDR split
+  add eax, 4
+  mov esi, eax
+  mov edx, dataLen
+  add edx, OFFSET buffer
+  sub edx, eax
+  invoke CreateArt, hRedis, esi, edx
+  mov ebx, eax
+  invoke wsprintf, ADDR bodyBuffer, OFFSET createBody, ebx
+  ; header
+  invoke wsprintf, ADDR respBuffer, OFFSET createHeader, eax
+  invoke send, hClient, ADDR respBuffer, eax, 0
+  invoke Str_length, ADDR bodyBuffer
+  invoke send, hClient, ADDR bodyBuffer, eax, 0
+
+  jmp CloseConnection
+
+UPDATE:
+  ; get id
+  invoke FindString, ADDR buffer, ADDR paramId
+  ; skip "id="
+  add eax, 3
+  mov edx, eax
+  call ParseDecimal32
+  mov ebx, eax
+  ; find the start of body
+  invoke FindString, ADDR buffer, ADDR split
+  add eax, 4
+  mov edx, eax
+  sub edx, dataLen
+  ; eax: buffer, edx: len, ebx: id
+  invoke UpdateArt, hRedis, eax, edx, ebx
+
+  jmp CloseConnection
 
 READ:
-; GET, id: int
+  ; get id
+  invoke FindString, OFFSET buffer, ADDR paramId
+  ; skip "id="
+  add eax, 3
+  mov edx, eax
+  call ParseDecimal32
+  invoke ReadArt, hRedis, OFFSET buffer, eax
+  ; construct response
 
+  jmp CloseConnection
+  
+DOWNLOAD:
+  ; get id
+  invoke FindString, OFFSET buffer, ADDR paramId
+  ; skip "id="
+  add eax, 3
+  mov edx, eax
+  call ParseDecimal32
 
-
-
-  ; wsprintf return ohow many bytes are written
-  invoke Str_length, OFFSET ppmBody
+  invoke ReadArt, hRedis, OFFSET buffer, eax
   ; preserve length
   mov ebx, eax
+
+  ; part of header
   invoke Str_length, OFFSET ppmHeader
   invoke send, hClient, OFFSET ppmHeader, eax, 0
-  invoke wsprintf, OFFSET buffer, OFFSET lengthFmt, ebx
-  invoke send, hClient, OFFSET buffer, eax, 0
-  invoke send, hClient, OFFSET ppmBody, ebx, 0
+  ; content-length & separate CRLF
+  invoke wsprintf, OFFSET respBuffer, OFFSET lengthFmt, ebx
+  invoke send, hClient, OFFSET respBuffer, eax, 0
+  ; actual content
+  invoke send, hClient, OFFSET Buffer, ebx, 0
+  jmp CloseConnection
 
+SEND_OK:
+  invoke Str_length, ADDR optionHeader
+  invoke send, hClient, ADDR optionHeader, eax, 0
+  jmp CloseConnection
+
+CloseConnection:
   invoke closesocket, hClient
   jmp ServerLoop
 
-DOWNLOAD:
 
 exitProgram:
   exit

@@ -1,7 +1,14 @@
 ifndef HTTPUTIL_INC_
 HTTPUTIL_INC_ EQU 1
 	EXTERNDEF htmlResp:BYTE
+	EXTERNDEF httpHeader:BYTE
 	EXTERNDEF ppmHeader:BYTE
+
+	EXTERNDEF createHeader:BYTE
+	EXTERNDEF createBody:BYTE
+
+	EXTERNDEF optionHeader:BYTE
+
 	EXTERNDEF lengthFmt:BYTE
 	EXTERNDEF respBuffer:BYTE
 endif
