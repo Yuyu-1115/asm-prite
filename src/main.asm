@@ -195,13 +195,23 @@ CREATE:
   add edx, OFFSET buffer
   sub edx, eax
   invoke CreateArt, hRedis, esi, edx
-  mov ebx, eax
+  mov ebx, eax ; ebx = new id
+
+  ; prepare body
   invoke wsprintf, ADDR bodyBuffer, OFFSET createBody, ebx
-  ; header
-  invoke wsprintf, ADDR respBuffer, OFFSET createHeader, eax
-  invoke send, hClient, ADDR respBuffer, eax, 0
   invoke Str_length, ADDR bodyBuffer
-  invoke send, hClient, ADDR bodyBuffer, eax, 0
+  mov ecx, eax ; ecx = body length
+
+  ; send header
+  invoke Str_length, OFFSET createHeader
+  invoke send, hClient, OFFSET createHeader, eax, 0
+  
+  ; send content-length
+  invoke wsprintf, ADDR respBuffer, OFFSET lengthFmt, ecx
+  invoke send, hClient, ADDR respBuffer, eax, 0
+
+  ; send body
+  invoke send, hClient, ADDR bodyBuffer, ecx, 0
 
   jmp CloseConnection
 
@@ -212,14 +222,25 @@ UPDATE:
   add eax, 3
   mov edx, eax
   call ParseDecimal32
-  mov ebx, eax
+  mov ebx, eax ; ebx = id
+
   ; find the start of body
   invoke FindString, ADDR buffer, ADDR split
   add eax, 4
-  mov edx, eax
-  sub edx, dataLen
-  ; eax: buffer, edx: len, ebx: id
-  invoke UpdateArt, hRedis, eax, edx, ebx
+  mov esi, eax ; esi = pBody
+
+  ; calculate body length
+  mov edx, esi
+  sub edx, OFFSET buffer ; edx = header length
+  mov ecx, dataLen
+  sub ecx, edx ; ecx = body length
+  mov edx, ecx
+
+  invoke UpdateArt, hRedis, esi, edx, ebx
+
+  ; Send OK response
+  invoke Str_length, ADDR optionHeader
+  invoke send, hClient, ADDR optionHeader, eax, 0
 
   jmp CloseConnection
 
@@ -231,7 +252,17 @@ READ:
   mov edx, eax
   call ParseDecimal32
   invoke ReadArt, hRedis, OFFSET buffer, eax
-  ; construct response
+  ; preserve length
+  mov ebx, eax
+
+  ; part of header
+  invoke Str_length, OFFSET readHeader
+  invoke send, hClient, OFFSET readHeader, eax, 0
+  ; content-length & separate CRLF
+  invoke wsprintf, OFFSET respBuffer, OFFSET lengthFmt, ebx
+  invoke send, hClient, OFFSET respBuffer, eax, 0
+  ; actual content
+  invoke send, hClient, OFFSET buffer, ebx, 0
 
   jmp CloseConnection
   
