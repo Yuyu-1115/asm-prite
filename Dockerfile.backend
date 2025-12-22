@@ -3,14 +3,13 @@ FROM i386/debian:bookworm-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
-    wine \
-    make \
-    && rm -rf /var/lib/apt/lists/*
+	wine \
+	make \
+	&& rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
-COPY ML.EXE .
-COPY link.exe .
+RUN make
 
 EXPOSE 8080
 

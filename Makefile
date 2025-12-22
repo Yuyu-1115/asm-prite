@@ -28,7 +28,7 @@ $(BUILD_DIR)/%.obj: $(SRC_DIR)/%.asm
 	$(ML) $(MLFLAGS) /Fo$@ $<
 
 $(BUILD_DIR):
-	@if not exist $@ mkdir $@
+	mkdir -p $@
 
 .PHONY: run
 run: all
