@@ -8,6 +8,8 @@ HTTPUTIL_INC_ EQU 1
 	EXTERNDEF createBody:BYTE
 
 	EXTERNDEF optionHeader:BYTE
+	EXTERNDEF readHeader:BYTE
+
 
 	EXTERNDEF lengthFmt:BYTE
 	EXTERNDEF respBuffer:BYTE
