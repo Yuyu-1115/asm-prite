@@ -1,0 +1,17 @@
+FROM i386/debian:bookworm-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    wine \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY . .
+
+RUN rm -rf build out.exe && make ML="wine ML.EXE" LINK="wine link.exe"
+
+EXPOSE 8080
+
+CMD ["wine", "out.exe"]
+

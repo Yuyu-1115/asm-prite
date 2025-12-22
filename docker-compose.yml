@@ -1,0 +1,35 @@
+services:
+  backend:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8080:8080"
+    networks:
+      backend_net:
+    depends_on:
+      - redis
+    tty: true
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    networks:
+      backend_net:
+
+  redis:
+    image: redis:latest
+    networks:
+      backend_net:
+        ipv4_address: 100.74.236.97
+
+networks:
+  backend_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 100.74.236.0/24

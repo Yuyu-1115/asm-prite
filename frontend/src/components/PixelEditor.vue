@@ -65,7 +65,7 @@ import { useQuasar } from 'quasar';
 
 const $q = useQuasar();
 
-const API_BASE_URL = 'http://100.74.202.72:8080';
+const API_BASE_URL = 'http://localhost:8080';
 
 const width = 64;
 const height = 64;
